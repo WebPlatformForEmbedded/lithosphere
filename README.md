@@ -1,6 +1,6 @@
 # Lithosphere :earth_americas:
 
-Lithosphere is providing infrastructure to help you build thunder firmware images. It's based on buildroot combined with external layers for added needed extra functionality. It  
+Lithosphere is providing infrastructure to build thunder firmware images based on Buildroot. Buildroot is known to keep the process of creating embedded Linux systems simple. The key benefit of Lithosphere is that it is designed to be modular and extensible by using external layers. This keeps the custom changes needed for thunder away from the buildroot sources, making updating and maintaining images easy and clear. With a decent modern laptop it should take you about one hour, from cloning this repo, till a completed image with Thunder.
 
 ## Getting Started :rocket:
 To get started with Lithosphere, follow these steps:

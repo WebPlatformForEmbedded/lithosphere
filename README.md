@@ -1,1 +1,57 @@
-# Lithosphere
+# Lithosphere :earth_americas:
+
+Lithosphere is providing infrastructure to help you build thunder firmware images. It's based on buildroot combined with external layers for added needed extra functionality. It  
+
+## Getting Started :rocket:
+To get started with Lithosphere, follow these steps:
+
+1. Clone the Lithosphere repository:
+    ``` shell
+    git clone https://github.com/WebPlatformForEmbedded/Lithosphere.git
+    ```
+
+1. Initialize the submodules:
+    ``` shell
+    git submodule update --init --recursive
+    ```
+
+1. On-time Buildroot setup:
+    ``` shell
+    make \
+        -C buildroot \
+        BR2_EXTERNAL="${PWD}/buildroot-external-metrological-restricted:${PWD}/buildroot-external-metrological-open-source" \
+        O=${PWD}/raspberrypi3_wpe_ml \
+        raspberrypi3_wpe_ml_defconfig
+    ```
+
+1. Build the image:
+    ``` shell
+    cd raspberrypi3_wpe_ml
+    make  
+    ```
+
+## Updating the layers :arrows_clockwise:
+
+To update the Lithosphere project, follow these steps:
+
+1. Pull the latest changes from the Lithosphere repository:
+    ``` shell
+    git pull
+    ```
+
+2. Update the all the submodules:
+    ``` shell
+    git submodule update --init --recursive
+    ```
+
+   > Note that to be on the safe side, you should run git submodule update with the --init flag in case the Lithosphere commits you just pulled added new submodules, and with the --recursive flag if any submodules have nested submodules.
+
+
+## Issues and Contributions :hammer_and_wrench:
+
+If you encounter issues or have suggestions for improvements, please open an issue on the [ Thunder GitHub issue tracker](https://github.com/rdkcentral/thunder/issues). Contributions, such as bug fixes or new features, are always welcome. Please review our contribution guidelines before submitting a pull request.
+
+## License :scroll:
+
+Lithosphere is provided under the [Apache License 2.0](LICENSE). Please review the LICENSE file for more details. Note that this license only covers the files provided by buildroot-submodule. It does not cover buildroot (which is GPLv2 or later) nor any software installed by buildroot (they have their own licenses) nor your own code (which you are free to license as you want).
+

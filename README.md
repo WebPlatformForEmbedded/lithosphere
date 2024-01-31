@@ -1,1 +1,1 @@
-# ithosphere
+# Lithosphere

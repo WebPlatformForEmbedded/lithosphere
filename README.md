@@ -27,7 +27,11 @@ To get started with Lithosphere, follow these steps:
 1. Build the image:
     ``` shell
     cd raspberrypi3_wpe_ml
-    make  
+    make
+    ```
+    or
+    ``` shell
+    make -C raspberrypi3_wpe_ml
     ```
 
 ## Updating the layers :arrows_clockwise:

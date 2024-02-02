@@ -1,6 +1,6 @@
 # Lithosphere :earth_americas:
 
-[![License](https://img.shields.io/badge/License-Apache 2.0-blue.svg)](https://opensource.org/licenses/apache-2-0)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/apache-2-0)
 
 Lithosphere is providing infrastructure to build thunder firmware images based on Buildroot. Buildroot is known to keep the process of creating embedded Linux systems simple. The key benefit of Lithosphere is that it is designed to be modular and extensible by using external layers. This keeps the custom changes needed for thunder away from the buildroot sources, making updating and maintaining images easy and clear. With a decent modern laptop it should take you about one hour, from cloning this repo, till a completed image with Thunder.
 

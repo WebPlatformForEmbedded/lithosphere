@@ -1,0 +1,9 @@
+# Ignore everything
+*
+
+# But not these files...
+!buildroot
+!buildroot-external-metrological-*
+!README.md
+!LICENSE
+!.gitignore

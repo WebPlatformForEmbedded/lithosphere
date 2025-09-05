@@ -1,9 +1,9 @@
 [submodule "buildroot"]
 	path = buildroot
-	url = https://gitlab.com/buildroot.org/buildroot.git
+	url = https://github.com/buildroot/buildroot.git
 [submodule "buildroot-external-metrological-open-source"]
 	path = buildroot-external-metrological-open-source
-	url = git@github.com:Metrological/buildroot-external-metrological-open-source.git
+	url = https://github.com/Metrological/buildroot-external-metrological-open-source.git
 [submodule "buildroot-external-metrological-restricted"]
 	path = buildroot-external-metrological-restricted
 	url = git@github.com:Metrological/buildroot-external-metrological-restricted.git

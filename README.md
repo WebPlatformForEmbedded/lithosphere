@@ -22,19 +22,21 @@ To get started with Lithosphere, follow these steps:
     make \
         -C buildroot \
         BR2_EXTERNAL="${PWD}/buildroot-external-metrological-restricted:${PWD}/buildroot-external-metrological-open-source" \
-        O=${PWD}/raspberrypi3_wpe \
-        raspberrypi3_wpe_defconfig
+        O=${PWD}/raspberrypi_aarch64_wpe \
+        raspberrypi_aarch64_wpe_defconfig
     ```
 
 1. Build the image:
     ``` shell
-    cd raspberrypi3_wpe
+    cd raspberrypi_aarch64_wpe
     make
     ```
     or
     ``` shell
-    make -C raspberrypi3_wpe
+    make -C raspberrypi_aarch64_wpe
     ```
+
+> Note: There are additional defconfigs available for different hardware platforms or configurations. You can explore them in the `configs` directory of the repository and choose the one that best suits your needs.
 
 ## Updating the layers :arrows_clockwise:
 

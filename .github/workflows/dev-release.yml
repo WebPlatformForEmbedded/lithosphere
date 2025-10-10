@@ -133,6 +133,11 @@ jobs:
           echo "📁 Build artifacts:"
           ls -lh ./build/$CONFIG_NAME/images/
       
+      - name: Show ccache statistics
+        run: |
+          echo "📊 ccache Statistics:"
+          ./build/$CONFIG_NAME/host/usr/bin/ccache -s
+      
       - name: Compress image
         run: |
           echo "🗜️  Compressing image at $(date)..."

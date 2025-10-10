@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build/download
-          key: downloads-${{ hashFiles('buildroot/.git/modules/**/HEAD', 'buildroot-external-metrological-open-source/.git/HEAD', 'buildroot-external-metrological-restricted/.git/HEAD') }}
+          key: downloads-${{ hashFiles('buildroot/.git/modules/**/HEAD', 'buildroot-external-metrological-open-source/.git/HEAD') }}
           restore-keys: |
             downloads-
       
@@ -89,7 +89,7 @@ jobs:
           
           # Initialize config
           make -C buildroot \
-            BR2_EXTERNAL="../buildroot-external-metrological-restricted:../buildroot-external-metrological-open-source" \
+            BR2_EXTERNAL="../buildroot-external-metrological-open-source" \
             O=../../build/$CONFIG_NAME \
             ${CONFIG_NAME}_defconfig
           
@@ -111,7 +111,7 @@ jobs:
           
           # Initialize defconfig
           make -C buildroot \
-            BR2_EXTERNAL="../buildroot-external-metrological-restricted:../buildroot-external-metrological-open-source" \
+            BR2_EXTERNAL="../buildroot-external-metrological-open-source" \
             O=../../build/$CONFIG_NAME \
             ${CONFIG_NAME}_defconfig
           

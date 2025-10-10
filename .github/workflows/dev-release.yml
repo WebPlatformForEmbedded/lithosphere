@@ -9,6 +9,7 @@ env:
   DEBIAN_FRONTEND: noninteractive
   FORCE_UNSAFE_CONFIGURE: 1
   CONFIG_NAME: raspberrypi_armv7_thunder
+  CCACHE_LIMIT: 3.5G
 
 jobs:
   build:
@@ -78,12 +79,6 @@ jobs:
           
           echo "✅ Dependencies installed"
       
-      - name: Configure ccache
-        run: |
-          ccache -M 3.5G
-          ccache -z  # Zero statistics
-          echo "✅ ccache configured with 3.5GB limit"
-      
       - name: Get git reference
         id: ref
         run: |
@@ -100,8 +95,8 @@ jobs:
           
           # Initialize config
           make -C buildroot \
-            BR2_EXTERNAL="../buildroot-external-metrological-restricted:../buildroot-external-metrological-open-source" \
-            O=../../build/$CONFIG_NAME \
+            BR2_EXTERNAL="../buildroot-external-metrological-open-source" \
+            O=../build/$CONFIG_NAME \
             ${CONFIG_NAME}_defconfig
           
           make -C build/$CONFIG_NAME syncconfig
@@ -120,14 +115,11 @@ jobs:
           echo "🔨 Building $CONFIG_NAME..."
           echo "⏰ Build started at $(date)"
           
-          # Initialize defconfig
-          make -C buildroot \
-            BR2_EXTERNAL="../buildroot-external-metrological-restricted:../buildroot-external-metrological-open-source" \
-            O=../../build/$CONFIG_NAME \
-            ${CONFIG_NAME}_defconfig
-          
           # Add WPE WebKit parallel build optimization
           echo 'BR2_PACKAGE_WPEWEBKIT_ML_PARALLEL_BUILD_JOBS="6"' >> ./build/$CONFIG_NAME/.config
+          
+	  # Compiler cache initial setup
+          echo 'BR2_CCACHE_INITIAL_SETUP="-M ${CCACHE_LIMIT} -z"' >> ./build/$CONFIG_NAME/.config
           
           make -C build/$CONFIG_NAME syncconfig
           
@@ -135,11 +127,6 @@ jobs:
           time make -C build/$CONFIG_NAME
           
           echo "✅ Build completed at $(date)"
-      
-      - name: Show ccache statistics
-        run: |
-          echo "📊 ccache Statistics:"
-          ccache -s
       
       - name: Show build artifacts
         run: |

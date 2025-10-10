@@ -118,7 +118,7 @@ jobs:
           # Add WPE WebKit parallel build optimization
           echo 'BR2_PACKAGE_WPEWEBKIT_ML_PARALLEL_BUILD_JOBS="6"' >> ./build/$CONFIG_NAME/.config
           
-	  # Compiler cache initial setup
+          # Compiler cache initial setup
           echo 'BR2_CCACHE_INITIAL_SETUP="-M ${CCACHE_LIMIT} -z"' >> ./build/$CONFIG_NAME/.config
           
           make -C build/$CONFIG_NAME syncconfig

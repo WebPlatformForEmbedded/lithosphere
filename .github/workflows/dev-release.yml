@@ -1,0 +1,225 @@
+name: Dev Release - RPi ARMv7 Thunder
+on:
+  push:
+    tags:
+      - 'dev-*'
+
+env:
+  TZ: Etc/UTC
+  DEBIAN_FRONTEND: noninteractive
+  FORCE_UNSAFE_CONFIGURE: 1
+  CONFIG_NAME: raspberrypi_armv7_thunder
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      
+      - name: Set up SSH for private repos
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+          echo "${{ secrets.GHA_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          cat <<EOT >> ~/.ssh/config
+          Host github.com
+              IdentityFile ~/.ssh/id_ed25519
+              IdentitiesOnly yes
+          EOT
+      
+      - name: Cache downloads
+        uses: actions/cache@v4
+        with:
+          path: build/download
+          key: downloads-${{ hashFiles('buildroot/.git/modules/**/HEAD', 'buildroot-external-metrological-open-source/.git/HEAD', 'buildroot-external-metrological-restricted/.git/HEAD') }}
+          restore-keys: |
+            downloads-
+      
+      - name: Cache ccache (armv7)
+        uses: actions/cache@v4
+        with:
+          path: build/ccache
+          key: ccache-armv7-${{ hashFiles('buildroot/.git/modules/**/HEAD') }}
+          restore-keys: |
+            ccache-armv7-
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq --yes install apt-utils > /dev/null
+          sudo apt-get -qq --yes install \
+            subversion build-essential bison flex gettext libncurses5-dev texinfo \
+            autoconf automake libtool mercurial git-core gperf gawk expat curl cvs \
+            libexpat-dev bzr unzip bc python3-dev wget cpio rsync xxd libmpc-dev \
+            libgmp3-dev xz-utils file ccache > /dev/null
+          
+          # Install multilib on x86_64
+          if [ "$(arch)" = "x86_64" ]; then
+            sudo apt-get -qq --yes install gcc-multilib g++-multilib > /dev/null
+          fi
+          
+          echo "✅ Dependencies installed"
+      
+      - name: Configure ccache
+        run: |
+          ccache -M 3.5G
+          ccache -z  # Zero statistics
+          echo "✅ ccache configured with 3.5GB limit"
+      
+      - name: Get git reference
+        id: ref
+        run: |
+          REF=$(git rev-parse --short HEAD)
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+          echo "📌 Building reference: $REF"
+          echo "🏷️  Tag: ${{ github.ref_name }}"
+      
+      - name: Download packages
+        run: |
+          export BR2_DL_DIR="${PWD}/build/download"
+          
+          echo "📦 Downloading packages for $CONFIG_NAME..."
+          
+          # Initialize config
+          make -C buildroot \
+            BR2_EXTERNAL="../buildroot-external-metrological-restricted:../buildroot-external-metrological-open-source" \
+            O=../../build/$CONFIG_NAME \
+            ${CONFIG_NAME}_defconfig
+          
+          make -C build/$CONFIG_NAME syncconfig
+          
+          # Download all sources
+          echo "⏬ Running 'make source'..."
+          time make -C build/$CONFIG_NAME source
+          
+          echo "✅ Package download complete"
+      
+      - name: Build ${{ env.CONFIG_NAME }}
+        run: |
+          export BR2_DL_DIR="${PWD}/build/download"
+          export BR2_CCACHE_DIR="${PWD}/build/ccache"
+          
+          echo "🔨 Building $CONFIG_NAME..."
+          echo "⏰ Build started at $(date)"
+          
+          # Initialize defconfig
+          make -C buildroot \
+            BR2_EXTERNAL="../buildroot-external-metrological-restricted:../buildroot-external-metrological-open-source" \
+            O=../../build/$CONFIG_NAME \
+            ${CONFIG_NAME}_defconfig
+          
+          # Add WPE WebKit parallel build optimization
+          echo 'BR2_PACKAGE_WPEWEBKIT_ML_PARALLEL_BUILD_JOBS="6"' >> ./build/$CONFIG_NAME/.config
+          
+          make -C build/$CONFIG_NAME syncconfig
+          
+          # Build with timing
+          time make -C build/$CONFIG_NAME
+          
+          echo "✅ Build completed at $(date)"
+      
+      - name: Show ccache statistics
+        run: |
+          echo "📊 ccache Statistics:"
+          ccache -s
+      
+      - name: Show build artifacts
+        run: |
+          echo "📁 Build artifacts:"
+          ls -lh ./build/$CONFIG_NAME/images/
+      
+      - name: Compress image
+        run: |
+          echo "🗜️  Compressing image at $(date)..."
+          
+          xz --verbose --keep --compress --stdout \
+            ./build/$CONFIG_NAME/images/sdcard.img > \
+            ./${CONFIG_NAME}-${{ steps.ref.outputs.ref }}-sdcard.img.xz
+          
+          # Show file size
+          echo ""
+          echo "📦 Compressed image:"
+          ls -lh ${CONFIG_NAME}-${{ steps.ref.outputs.ref }}-sdcard.img.xz
+          
+          # Calculate checksums
+          echo ""
+          echo "🔐 Checksums:"
+          sha256sum ${CONFIG_NAME}-${{ steps.ref.outputs.ref }}-sdcard.img.xz | tee ${CONFIG_NAME}-${{ steps.ref.outputs.ref }}-sdcard.img.xz.sha256
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz
+          path: |
+            ${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz
+            ${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz.sha256
+          compression-level: 0  # Already compressed with xz
+      
+      - name: Create pre-release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz
+            ${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz.sha256
+          prerelease: true
+          generate_release_notes: true
+          body: |
+            ## 🎉 Dev Build - ${{ env.CONFIG_NAME }}
+            
+            **Configuration:** `${{ env.CONFIG_NAME }}_defconfig`  
+            **Reference:** `${{ steps.ref.outputs.ref }}`  
+            **Tag:** `${{ github.ref_name }}`  
+            **Build Date:** ${{ github.event.head_commit.timestamp }}  
+            **Triggered by:** @${{ github.actor }}
+            
+            ### 📦 Artifacts
+            - `${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz` - Compressed SD card image
+            - `${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz.sha256` - SHA256 checksum
+            
+            ### 🔧 Platform
+            - **Target:** Raspberry Pi (ARMv7 32-bit)
+            - **Variant:** Thunder
+            
+            ### ⚡ Usage
+            ```bash
+            # Download and verify
+            wget https://github.com/WebPlatformForEmbedded/lithosphere/releases/download/${{ github.ref_name }}/${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz
+            wget https://github.com/WebPlatformForEmbedded/lithosphere/releases/download/${{ github.ref_name }}/${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz.sha256
+            
+            # Verify checksum
+            sha256sum -c ${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz.sha256
+            
+            # Extract and flash
+            xz -d ${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img.xz
+            sudo dd if=${{ env.CONFIG_NAME }}-${{ steps.ref.outputs.ref }}-sdcard.img of=/dev/sdX bs=4M status=progress
+            sync
+            ```
+            
+            ---
+            
+            ⚠️ **This is a development build for testing purposes.**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build summary
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ BUILD SUCCESSFUL"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "📋 Configuration: $CONFIG_NAME"
+          echo "🏷️  Tag: ${{ github.ref_name }}"
+          echo "📌 Reference: ${{ steps.ref.outputs.ref }}"
+          echo "🎯 Platform: Raspberry Pi (ARMv7)"
+          echo ""
+          echo "📦 Artifact: ${CONFIG_NAME}-${{ steps.ref.outputs.ref }}-sdcard.img.xz"
+          echo "🔗 Release: https://github.com/WebPlatformForEmbedded/lithosphere/releases/tag/${{ github.ref_name }}"
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

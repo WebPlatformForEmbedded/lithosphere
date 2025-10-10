@@ -47,16 +47,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build/download
-          key: downloads-${{ hashFiles('buildroot/.git/modules/**/HEAD', 'buildroot-external-metrological-open-source/.git/HEAD', 'buildroot-external-metrological-restricted/.git/HEAD') }}
+          key: downloads-${{ hashFiles('.gitmodules') }}-${{ github.sha }}
           restore-keys: |
+            downloads-${{ hashFiles('.gitmodules') }}-
             downloads-
       
       - name: Cache ccache (armv7)
         uses: actions/cache@v4
         with:
           path: build/ccache
-          key: ccache-armv7-${{ hashFiles('buildroot/.git/modules/**/HEAD') }}
+          key: ccache-armv7-${{ hashFiles('.gitmodules') }}-${{ github.sha }}
           restore-keys: |
+            ccache-armv7-${{ hashFiles('.gitmodules') }}-
             ccache-armv7-
       
       - name: Install dependencies

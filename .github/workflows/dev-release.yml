@@ -48,18 +48,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build/download
-          key: downloads-${{ hashFiles('.gitmodules') }}-${{ github.sha }}
+          key: downloads-${{ hashFiles('.gitmodules') }}
           restore-keys: |
-            downloads-${{ hashFiles('.gitmodules') }}-
             downloads-
       
       - name: Cache ccache (armv7)
         uses: actions/cache@v4
         with:
           path: build/ccache
-          key: ccache-armv7-${{ hashFiles('.gitmodules') }}-${{ github.sha }}
+          key: ccache-armv7-${{ hashFiles('.gitmodules') }}
           restore-keys: |
-            ccache-armv7-${{ hashFiles('.gitmodules') }}-
             ccache-armv7-
       
       - name: Install dependencies

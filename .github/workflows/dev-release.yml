@@ -27,7 +27,10 @@ jobs:
               IdentityFile ~/.ssh/id_ed25519
               IdentitiesOnly yes
           EOT
-    
+          
+          # Configure git to use SSH instead of HTTPS for GitHub
+          git config --global url."git@github.com:".insteadOf "https://github.com/"
+      
       - name: Checkout repository
         uses: actions/checkout@v4
         with:

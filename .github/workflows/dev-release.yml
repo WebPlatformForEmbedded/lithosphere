@@ -15,6 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Checkout repository (without submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+      
       - name: Set up SSH for private repos
         run: |
           mkdir -p ~/.ssh
@@ -28,14 +34,14 @@ jobs:
               IdentitiesOnly yes
           EOT
           
-          # Configure git to use SSH instead of HTTPS for GitHub
-          git config --global url."git@github.com:".insteadOf "https://github.com/"
+          echo "✅ SSH configured"
       
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
+      - name: Checkout submodules
+        run: |
+          echo "📦 Checking out submodules..."
+          git submodule sync --recursive
+          git submodule update --init --recursive
+          echo "✅ Submodules checked out"
       
       - name: Cache downloads
         uses: actions/cache@v4

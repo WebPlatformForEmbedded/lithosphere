@@ -44,24 +44,39 @@ jobs:
           git submodule update --init --recursive
           echo "✅ Submodules checked out"
       
-      - name: Cache downloads
-        uses: actions/cache@v4
+      # Try to restore downloads cache
+      - name: Restore downloads cache
+        id: cache-downloads-restore
+        uses: actions/cache/restore@v4
         with:
           path: build/download
-          key: lithosphere-downloads-${{ hashFiles('.gitmodules') }}
+          key: downloads-${{ hashFiles('.gitmodules') }}
           restore-keys: |
-            lithosphere-downloads-
-          enableCrossOsArchive: true
+            downloads-
       
-      - name: Cache ccache (armv7)
-        uses: actions/cache@v4
+      # Try to restore ccache
+      - name: Restore ccache
+        id: cache-ccache-restore
+        uses: actions/cache/restore@v4
         with:
           path: build/ccache
-          key: lithosphere-ccache-armv7-${{ hashFiles('.gitmodules') }}
+          key: ccache-armv7-${{ hashFiles('.gitmodules') }}
           restore-keys: |
-            lithosphere-ccache-armv7-
-          enableCrossOsArchive: true
-
+            ccache-armv7-
+      
+      - name: Cache status
+        run: |
+          echo "📊 Cache Restore Status:"
+          echo "Downloads cache hit: ${{ steps.cache-downloads-restore.outputs.cache-hit }}"
+          echo "Downloads cache key: ${{ steps.cache-downloads-restore.outputs.cache-matched-key || 'none' }}"
+          echo "ccache hit: ${{ steps.cache-ccache-restore.outputs.cache-hit }}"
+          echo "ccache key: ${{ steps.cache-ccache-restore.outputs.cache-matched-key || 'none' }}"
+          echo ""
+          echo "📁 Checking directories:"
+          ls -lah build/ 2>/dev/null || echo "build/ doesn't exist"
+          du -sh build/download 2>/dev/null || echo "build/download doesn't exist"
+          du -sh build/ccache 2>/dev/null || echo "build/ccache doesn't exist"
+      
       - name: Install dependencies
         run: |
           sudo apt-get -qq update
@@ -106,6 +121,11 @@ jobs:
           time make -C build/$CONFIG_NAME source
           
           echo "✅ Package download complete"
+          echo ""
+          echo "📊 Download cache size:"
+          du -sh build/download
+          echo "Files in download cache:"
+          find build/download -type f | wc -l
       
       - name: Build ${{ env.CONFIG_NAME }}
         run: |
@@ -127,6 +147,9 @@ jobs:
           time make -C build/$CONFIG_NAME
           
           echo "✅ Build completed at $(date)"
+          echo ""
+          echo "📊 ccache size:"
+          du -sh build/ccache
       
       - name: Show build artifacts
         run: |
@@ -137,6 +160,35 @@ jobs:
         run: |
           echo "📊 ccache Statistics:"
           ./build/$CONFIG_NAME/host/usr/bin/ccache -s
+      
+      - name: Final cache sizes
+        run: |
+          echo "📊 Final cache directory sizes before saving:"
+          echo ""
+          echo "Downloads cache:"
+          du -sh build/download
+          echo ""
+          echo "ccache:"
+          du -sh build/ccache
+          echo ""
+          echo "Total build directory:"
+          du -sh build/
+      
+      # Save downloads cache (always, even if it existed)
+      - name: Save downloads cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: build/download
+          key: downloads-${{ hashFiles('.gitmodules') }}-${{ github.run_id }}
+      
+      # Save ccache (always, even if it existed)
+      - name: Save ccache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: build/ccache
+          key: ccache-armv7-${{ hashFiles('.gitmodules') }}-${{ github.run_id }}
       
       - name: Compress image
         run: |
@@ -224,5 +276,9 @@ jobs:
           echo ""
           echo "📦 Artifact: ${CONFIG_NAME}-${{ steps.ref.outputs.ref }}-sdcard.img.xz"
           echo "🔗 Release: https://github.com/WebPlatformForEmbedded/lithosphere/releases/tag/${{ github.ref_name }}"
+          echo ""
+          echo "📊 Cache Status:"
+          echo "Downloads: ${{ steps.cache-downloads-restore.outputs.cache-hit == 'true' && '✅ HIT' || '❌ MISS' }}"
+          echo "ccache: ${{ steps.cache-ccache-restore.outputs.cache-hit == 'true' && '✅ HIT' || '❌ MISS' }}"
           echo ""
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

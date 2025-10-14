@@ -61,7 +61,7 @@ jobs:
           restore-keys: |
             lithosphere-ccache-armv7-
           enableCrossOsArchive: true
-      
+
       - name: Install dependencies
         run: |
           sudo apt-get -qq update
